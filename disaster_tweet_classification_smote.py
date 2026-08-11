@@ -52,11 +52,87 @@ def main():
     train_data['text_clean'] = train_data['text'].apply(clean_text)
     test_data['text_clean'] = test_data['text'].apply(clean_text)
 
-    # 4. Combine text with keyword and location
+    # 4. Generate Exploratory Data Analysis (EDA) Plots
+    os.makedirs('plots', exist_ok=True)
+    print("Generating EDA Visualizations (WordClouds, Tweet Length Distribution, Top Keywords)...")
+
+    # EDA 1: Word Clouds for Disaster and Non-Disaster Tweets
+    disaster_tweets = train_data[train_data['target'] == 1]['text_clean']
+    non_disaster_tweets = train_data[train_data['target'] == 0]['text_clean']
+
+    plt.figure(figsize=(14, 6))
+    plt.subplot(1, 2, 1)
+    wordcloud_disaster = WordCloud(width=800, height=400, background_color='white').generate(' '.join(disaster_tweets))
+    plt.imshow(wordcloud_disaster, interpolation='bilinear')
+    plt.axis('off')
+    plt.title('Word Cloud - Disaster Tweets', fontsize=14, pad=10)
+
+    plt.subplot(1, 2, 2)
+    wordcloud_non_disaster = WordCloud(width=800, height=400, background_color='white').generate(' '.join(non_disaster_tweets))
+    plt.imshow(wordcloud_non_disaster, interpolation='bilinear')
+    plt.axis('off')
+    plt.title('Word Cloud - Non-Disaster Tweets', fontsize=14, pad=10)
+    plt.tight_layout()
+    plt.savefig('plots/wordclouds.png', dpi=300)
+    plt.close()
+
+    # EDA 2: Tweet Length Distribution
+    train_data['tweet_length'] = train_data['text'].astype(str).apply(len)
+    plt.figure(figsize=(10, 6))
+    sns.histplot(train_data[train_data['target'] == 1]['tweet_length'], color='red', label='Disaster Tweets', kde=True, stat="density", element="step")
+    sns.histplot(train_data[train_data['target'] == 0]['tweet_length'], color='green', label='Non-Disaster Tweets', kde=True, stat="density", element="step")
+    plt.xlabel('Tweet Length')
+    plt.ylabel('Density')
+    plt.title('Tweet Length Distribution')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig('plots/tweet_length_distribution.png', dpi=300)
+    plt.close()
+
+    # EDA 3: Top 10 Keywords (Disaster & Non-Disaster)
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    disaster_keywords = train_data[train_data['target'] == 1]['keyword'].replace('', np.nan).dropna().value_counts().head(10)
+    disaster_keywords.sort_values().plot(kind='barh', color='red')
+    plt.title('Top 10 Disaster Keywords')
+    plt.xlabel('Count')
+    plt.ylabel('keyword')
+
+    plt.subplot(1, 2, 2)
+    nondisaster_keywords = train_data[train_data['target'] == 0]['keyword'].replace('', np.nan).dropna().value_counts().head(10)
+    nondisaster_keywords.sort_values().plot(kind='barh', color='green')
+    plt.title('Top 10 Non-Disaster Keywords')
+    plt.xlabel('Count')
+    plt.ylabel('keyword')
+    plt.tight_layout()
+    plt.savefig('plots/top_keywords.png', dpi=300)
+    plt.close()
+
+    # Individual plot for Top 10 Disaster Keywords
+    plt.figure(figsize=(6, 6))
+    disaster_keywords.sort_values().plot(kind='barh', color='red')
+    plt.title('Top 10 Disaster Keywords')
+    plt.xlabel('Count')
+    plt.ylabel('keyword')
+    plt.tight_layout()
+    plt.savefig('plots/top_10_disaster_keywords.png', dpi=300)
+    plt.close()
+
+    # Individual plot for Top 10 Non-Disaster Keywords
+    plt.figure(figsize=(6, 6))
+    nondisaster_keywords.sort_values().plot(kind='barh', color='green')
+    plt.title('Top 10 Non-Disaster Keywords')
+    plt.xlabel('Count')
+    plt.ylabel('keyword')
+    plt.tight_layout()
+    plt.savefig('plots/top_10_nondisaster_keywords.png', dpi=300)
+    plt.close()
+
+    # 5. Combine text with keyword and location
     train_data['combined_text'] = train_data['text_clean'] + ' ' + train_data['keyword'] + ' ' + train_data['location']
     test_data['combined_text'] = test_data['text_clean'] + ' ' + test_data['keyword'] + ' ' + test_data['location']
 
-    # 5. Tokenization and Padding
+    # 6. Tokenization and Padding
     tokenizer = Tokenizer()
     tokenizer.fit_on_texts(train_data['combined_text'])
     max_length = 100
@@ -68,17 +144,17 @@ def main():
     print(f"Vocabulary size: {len(tokenizer.word_index) + 1}")
     print(f"Original class distribution: {np.bincount(y)}")
 
-    # 6. Apply SMOTE for Class Balancing
+    # 7. Apply SMOTE for Class Balancing
     print("Applying SMOTE for class balancing...")
     smote = SMOTE(random_state=42)
     X_resampled, y_resampled = smote.fit_resample(X, y)
     print(f"Resampled class distribution: {np.bincount(y_resampled)}")
 
-    # 7. Train/Validation Split
+    # 8. Train/Validation Split
     X_train, X_val, y_train, y_val = train_test_split(X_resampled, y_resampled, test_size=0.2, random_state=42)
     print(f"X_train shape: {X_train.shape}, X_val shape: {X_val.shape}")
 
-    # 8. Build Model Architecture
+    # 9. Build Model Architecture
     vocab_size = len(tokenizer.word_index) + 1
     model = Sequential([
         Embedding(input_dim=vocab_size, output_dim=128, input_length=max_length),
@@ -91,7 +167,7 @@ def main():
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     model.summary()
 
-    # 9. Model Training
+    # 10. Model Training
     print("Training Bidirectional LSTM model for 10 epochs...")
     history = model.fit(
         X_train, y_train,
@@ -101,7 +177,7 @@ def main():
         verbose=1
     )
 
-    # 10. Model Evaluation
+    # 11. Model Evaluation
     y_val_prob = model.predict(X_val)
     y_val_pred = (y_val_prob > 0.5).astype(int).reshape(-1)
     
@@ -112,7 +188,7 @@ def main():
     print("Classification Report:")
     print(classification_report(y_val, y_val_pred, target_names=['Non-Disaster (0)', 'Disaster (1)']))
 
-    # 11. Save Predictions for Test Set
+    # 12. Save Predictions for Test Set
     test_probs = model.predict(X_test)
     test_preds = (test_probs > 0.5).astype(int).reshape(-1)
     
@@ -120,17 +196,14 @@ def main():
     submission.to_csv('submission.csv', index=False)
     print("Successfully saved predictions to 'submission.csv'")
 
-    # 12. Save Trained Model & Tokenizer artifacts
+    # 13. Save Trained Model & Tokenizer artifacts
     os.makedirs('saved_model', exist_ok=True)
     model.save('saved_model/disaster_lstm_model.keras')
     with open('saved_model/tokenizer.pickle', 'wb') as handle:
         pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
     print("Saved trained model and tokenizer to 'saved_model/' directory.")
 
-    # 13. Generate and Save Visualizations
-    os.makedirs('plots', exist_ok=True)
-    
-    # Accuracy & Loss plots
+    # 14. Save Model Performance Visualizations
     plt.figure(figsize=(12, 4))
     plt.subplot(1, 2, 1)
     plt.plot(history.history['accuracy'], label='Train Accuracy', color='#3b82f6', linewidth=2)
@@ -162,7 +235,7 @@ def main():
     plt.savefig('plots/confusion_matrix.png', dpi=300)
     plt.close()
 
-    print("Saved evaluation plots to 'plots/' directory.")
+    print("Saved all evaluation and EDA plots to 'plots/' directory.")
     print("=== Pipeline Execution Complete! ===")
 
 if __name__ == '__main__':
