@@ -9,6 +9,19 @@ During natural disasters and emergencies, social media (especially Twitter) is a
 
 ---
 
+## 📊 Exploratory Data Analysis (EDA) Visualizations
+
+### 1. Word Clouds (Disaster vs Non-Disaster Tweets)
+![Word Clouds](plots/wordclouds.png)
+
+### 2. Tweet Length Distribution
+![Tweet Length Distribution](plots/tweet_length_distribution.png)
+
+### 3. Top 10 Keywords (Disaster & Non-Disaster)
+![Top 10 Keywords](plots/top_keywords.png)
+
+---
+
 ## 🛠️ Features & Architecture
 1. **Preprocessing & Cleaning**: Strips URLs, HTML tags, special characters, and handles missing keyword/location metadata.
 2. **Class Imbalance Handling**: Employs **SMOTE** (`imblearn.over_sampling.SMOTE`) to balance minority and majority classes.
@@ -20,7 +33,7 @@ During natural disasters and emergencies, social media (especially Twitter) is a
 
 ---
 
-## 📊 Results
+## 📈 Model Performance & Results
 - **Validation F1 Score**: **0.7290 (72.9%)**
 - **Test Predictions**: Saved in `submission.csv` (3,263 test tweets).
 
@@ -39,6 +52,11 @@ disaster-tweet-classification-smote/
 │   ├── train_1.csv
 │   └── test_1.csv
 ├── plots/
+│   ├── wordclouds.png
+│   ├── tweet_length_distribution.png
+│   ├── top_keywords.png
+│   ├── top_10_disaster_keywords.png
+│   ├── top_10_nondisaster_keywords.png
 │   ├── training_curves.png
 │   └── confusion_matrix.png
 ├── saved_model/
@@ -60,7 +78,7 @@ disaster-tweet-classification-smote/
 pip install -r requirements.txt
 ```
 
-### 2. Train the Model
+### 2. Train Model & Generate EDA Plots
 ```bash
 python disaster_tweet_classification_smote.py
 ```
